@@ -4,7 +4,8 @@ import turtle
 number_of_turtles = 16
 steps_of_time_number = 1000
 
-pool = [[turtle.Turtle(shape='circle'), 0, 0, randint(-8, 8), randint(-8, 8)] for i in range(number_of_turtles)]
+h = [randint(-10, 10) / 10 for i in range(number_of_turtles)]
+pool = [[turtle.Turtle(shape='circle'), 0, 0, h[i], (1 - h[i] ** 2) ** (1/2)] for i in range(number_of_turtles)]
 for unit in pool:
     unit[0].penup()
     unit[0].speed(0)

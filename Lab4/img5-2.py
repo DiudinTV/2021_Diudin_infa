@@ -4,30 +4,74 @@ import numpy as np
 
 pygame.init()
 
+FPS = 30
+screen = pygame.display.set_mode((1000, 667))
+
+TOPSKY = (254, 213, 162)
+BOTSKY = (254, 213, 196)
+SUN = (252, 238, 33)
+BACKMNT = (252, 152, 49)
+FOREMNT = (172, 67, 52)
+NEWMNT = (48, 16, 38)
+TOPGR = (254, 213, 148)
+BOTGR = (179, 134, 148)
+birdColor = (66, 33, 11)
+
+CorsFirstpointBackMountains = (5, 280)
+
+birdsParametrs = [(600, 120, 1.5), (450, 90, 2.0), (400, 180, 1.5), (500, 132, 1.0),  # Параметры,
+                  (550, 450, 3.5), (500, 350, 4.0), (480, 500, 3.5), (700, 500, 3.0)]  # описывающие каждую из птиц
+
+birdNormalScale = 60  # int
+
+
+def y_bird_up(_x, scale):
+    """
+    Расчитывает и возвращает _y - значение вертикальной координаты точки верхней границы птицы с учетом коэффициента
+        пропорциональности размера в зависимости от _x - горизонтальной координаты
+    :param scale: коэффициент пропорциональности размера птицы.
+    :return: _y
+    """
+    if _x <= birdNormalScale / 2:
+        _y = round(_x ** 2 / 90 * scale)
+    else:
+        _y = round((birdNormalScale - _x) ** 2 / 90 * scale)
+    return _y
+
+
+def y_bird_down(_x, scale):
+    """
+        Расчитывает и возвращает _y - значение вертикальной координаты точки нижней границы птицы с учетом коэффициента
+            пропорциональности размера в зависимости от _x - горизонтальной координаты
+        :param scale: коэффициент пропорциональности размера птицы.
+        :return: _y
+        """
+    if _x <= birdNormalScale / 2:
+        _y = round(_x / 2 * scale)
+    else:
+        _y = round((birdNormalScale - _x) / 2 * scale)
+    return _y
+
 
 def bird_cor(scale):
     """
-
-    :param scale:
+    Возвращает координаты границ рисунка птицы, привязанные к прямоугольной системе координат
+        с центром в верхней левой точке птицы, в соответствии сразмерами, пропорциональными birdNormalScale
+        с коэффициентом Scale
+    :param scale: коэффициент пропорциональности размера птицы.
     :return: массив пар координат птицы в системе координат, связанной с ее левой верхней точкой
     """
-    # xyb = [(xBird, yBird), (xBird + 2 * birdScale, yBird - birdScale)]
-    # xBird = xBird + 2 * birdScale
-    # yBird = yBird - birdScale
-    # for i in range(10):
-    #     t = xBird - i / 10 * 2 * birdScale, yBird + birdScale * i ** 2 / 100
-    #     xyb.append(t)
-    # xyb.append((xBird - 2 * birdScale, yBird + birdScale))
-    # _x = xBird - 9 / 10 * 2 * birdScale
-    # _y = yBird + birdScale * 9 ** 2 / 100
-    # xBird -= 4 * birdScale
-    # xyb.append((xBird, yBird))
-    # for i in range(10):
-    #     t = xBird + i / 9 * 2 * birdScale, yBird + birdScale * i ** 2 / 100
-    #     xyb.append(t)
-    # xyb.append((_x, _y))
-    # return
-    pass
+    global birdNormalScale
+    birdRelativeCords = []
+    for _x in range(birdNormalScale):
+        xUpBird = round(_x * scale)
+        yUpBird = y_bird_up(_x, scale)
+        birdRelativeCords.append((xUpBird, yUpBird))
+    for _x in range(birdNormalScale, -1, -1):
+        xUpBird = round(_x * scale)
+        yUpBird = y_bird_down(_x, scale)
+        birdRelativeCords.append((xUpBird, yUpBird))
+    return birdRelativeCords
 
 
 def draw_bird(xBird, yBird, birdScale):
@@ -37,24 +81,64 @@ def draw_bird(xBird, yBird, birdScale):
     :param yBird: координата левой верхней точки птицы птицы по вертикальной оси
     :param birdScale: коэффициент пропорциональности размера птицы
     """
-    birdCords = bird_cor(birdScale)
-    for cordsPair in birdCords:
+    birdRelativeCords = bird_cor(birdScale)
+    birdCords = []
+    for cordsPair in birdRelativeCords:
         cordsPair = (cordsPair[0] + xBird, cordsPair[1] + yBird)
+        birdCords.append(cordsPair)
+    dr.polygon(screen, birdColor, birdCords)
 
-    dr.polygon(screen, BIRD, birdCords)
 
 
-FPS = 30
-screen = pygame.display.set_mode((1000, 667))
-TOPSKY = (254, 213, 162)
-BOTSKY = (254, 213, 196)
-SUN = (252, 238, 33)
-BACKMNT = (252, 152, 49)
-FOREMNT = (172, 67, 52)
-NEWMNT = (48, 16, 38)
-TOPGR = (254, 213, 148)
-BOTGR = (179, 134, 148)
-BIRD = (66, 33, 11)
+
+
+
+def cor_firstpoint_back_mountains():
+    """
+    Возвращает пару координат начальной точки задних гор
+    """
+    return CorsFirstpointBackMountains
+
+def cor_left_slide_segment():
+    """
+    Возвращает массив координат первого слева сглаженного сегмента задних гор
+    """
+
+def cor_left_angular_segment():
+    """
+    Возвращает массив координат первого угловатого сегмента задних гор
+    """
+
+def cor_center_slide_segment():
+    """
+    Возвращает массив координат второго слева сглаженного сегмента задних гор
+    """
+
+def cor_center_angular_segment():
+    """
+    Возвращает массив координат второго угловатого сегмента задних гор
+    """
+
+def cor_right_slide_segment():
+    """
+    Возвращает массив координат третьего слева сглаженного сегмента задних гор
+    """
+
+def cor_right_angular_segment():
+    """
+    Возвращает массив координат третьего угловатого сегмента задних гор
+    """
+
+def draw_back_mountain():
+    backMountainsCors = []
+    backMountainsCors.append(cor_firstpoint_back_mountains())
+    backMountainsCors.append(cor_left_slide_segment())
+    backMountainsCors.append(cor_left_angular_segment())
+    backMountainsCors.append(cor_center_slide_segment())
+    backMountainsCors.append(cor_center_angular_segment())
+    backMountainsCors.append(cor_right_slide_segment())
+    backMountainsCors.append(cor_right_angular_segment())
+
 
 # background mountains:
 x1 = np.arange(0, 230, 1)
@@ -148,14 +232,16 @@ dr.polygon(screen, FOREMNT, xy2)
 dr.polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
 dr.polygon(screen, NEWMNT, xy3)
 
-draw_bird(600, 120, 15)
-draw_bird(450, 90, 20)
-draw_bird(400, 180, 15)
-draw_bird(500, 132, 10)
-draw_bird(550, 450, 35)
-draw_bird(500, 350, 40)
-draw_bird(480, 500, 35)
-draw_bird(700, 500, 30)
+
+def draw_birds(birdsParametrs):
+    for birdParametrs in birdsParametrs:
+        xBird = birdParametrs[0]
+        yBird = birdParametrs[1]
+        scale = birdParametrs[2]
+        draw_bird(xBird, yBird, scale)
+
+
+draw_birds(birdsParametrs)
 
 pygame.display.update()
 clock = pygame.time.Clock()

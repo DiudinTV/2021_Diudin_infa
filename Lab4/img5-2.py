@@ -17,6 +17,7 @@ TOPGR = (254, 213, 148)
 BOTGR = (179, 134, 148)
 birdColor = (66, 33, 11)
 
+
 CorsFirstpointBackMountains = (5, 280)
 
 birdsParametrs = [(600, 120, 1.5), (450, 90, 2.0), (400, 180, 1.5), (500, 132, 1.0),  # Параметры,

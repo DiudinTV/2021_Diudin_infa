@@ -5,23 +5,43 @@ import numpy as np
 pygame.init()
 
 
-def draw_bird(x, y, s):
-    xyb = [(x, y), (x + 2 * s, y - s)]
-    x = x + 2 * s
-    y = y - s
-    for i in range(10):
-        t = x - i / 10 * 2 * s, y + s * i ** 2 / 100
-        xyb.append(t)
-    xyb.append((x - 2 * s, y + s))
-    xi = x - 9 / 10 * 2 * s
-    yi = y + s * 9 ** 2 / 100
-    x -= 4 * s
-    xyb.append((x, y))
-    for i in range(10):
-        t = x + i / 9 * 2 * s, y + s * i ** 2 / 100
-        xyb.append(t)
-    xyb.append((xi, yi))
-    return dr.polygon(screen, BIRD, xyb)
+def bird_cor(scale):
+    """
+
+    :param scale:
+    :return: массив пар координат птицы в системе координат, связанной с ее левой верхней точкой
+    """
+    # xyb = [(xBird, yBird), (xBird + 2 * birdScale, yBird - birdScale)]
+    # xBird = xBird + 2 * birdScale
+    # yBird = yBird - birdScale
+    # for i in range(10):
+    #     t = xBird - i / 10 * 2 * birdScale, yBird + birdScale * i ** 2 / 100
+    #     xyb.append(t)
+    # xyb.append((xBird - 2 * birdScale, yBird + birdScale))
+    # _x = xBird - 9 / 10 * 2 * birdScale
+    # _y = yBird + birdScale * 9 ** 2 / 100
+    # xBird -= 4 * birdScale
+    # xyb.append((xBird, yBird))
+    # for i in range(10):
+    #     t = xBird + i / 9 * 2 * birdScale, yBird + birdScale * i ** 2 / 100
+    #     xyb.append(t)
+    # xyb.append((_x, _y))
+    # return
+    pass
+
+
+def draw_bird(xBird, yBird, birdScale):
+    """
+    Рисует птицу, размер которой пропорционален Scale, а координаты левой верхней точки равны xBird, yBird
+    :param xBird: координата левой верхней точки птицы по горизонтальной оси
+    :param yBird: координата левой верхней точки птицы птицы по вертикальной оси
+    :param birdScale: коэффициент пропорциональности размера птицы
+    """
+    birdCords = bird_cor(birdScale)
+    for cordsPair in birdCords:
+        cordsPair = (cordsPair[0] + xBird, cordsPair[1] + yBird)
+
+    dr.polygon(screen, BIRD, birdCords)
 
 
 FPS = 30

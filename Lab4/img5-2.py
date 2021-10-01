@@ -1,6 +1,7 @@
 import pygame
-import pygame.draw as dr
+from pygame.draw import polygon, circle, ellipse, rect
 import numpy as np
+from math import cos, pi
 
 pygame.init()
 
@@ -10,26 +11,32 @@ screen = pygame.display.set_mode((1000, 667))
 TOPSKY = (254, 213, 162)
 BOTSKY = (254, 213, 196)
 SUN = (252, 238, 33)
-BACKMNT = (252, 152, 49)
+backMountainColor = (252, 152, 49)
 FOREMNT = (172, 67, 52)
 NEWMNT = (48, 16, 38)
 TOPGR = (254, 213, 148)
 BOTGR = (179, 134, 148)
 birdColor = (66, 33, 11)
-
-
-CorsFirstpointBackMountains = (5, 280)
+xLeftSlideCorBackMount = np.arange(10, 210, 1)
+xCenterSlideCorBackMount = np.arange(600, 750, 1)
+xRightSlideCorBackMount = np.arange(830, 900, 1)
 
 birdsParametrs = [(600, 120, 1.5), (450, 90, 2.0), (400, 180, 1.5), (500, 132, 1.0),  # Параметры,
                   (550, 450, 3.5), (500, 350, 4.0), (480, 500, 3.5), (700, 500, 3.0)]  # описывающие каждую из птиц
-
 birdNormalScale = 60  # int
+
+cordsFirstpointBackMountains = [(5, 280)]
+cordsLeftAngularSegment = [(250, 115), (265, 140), (380, 230), (437, 223),
+                           (470, 240), (510, 190), (560, 200), (590, 175)]
+cordsRightAngularSegment = [(780, 155)]
+cordsEndpointsBackMountains = [(940, 160), (1000, 198)]
 
 
 def y_bird_up(_x, scale):
     """
     Расчитывает и возвращает _y - значение вертикальной координаты точки верхней границы птицы с учетом коэффициента
         пропорциональности размера в зависимости от _x - горизонтальной координаты
+    :param _x: горизонтальная координата
     :param scale: коэффициент пропорциональности размера птицы.
     :return: _y
     """
@@ -44,6 +51,7 @@ def y_bird_down(_x, scale):
     """
         Расчитывает и возвращает _y - значение вертикальной координаты точки нижней границы птицы с учетом коэффициента
             пропорциональности размера в зависимости от _x - горизонтальной координаты
+        :param _x: горизонтальная координата
         :param scale: коэффициент пропорциональности размера птицы.
         :return: _y
         """
@@ -75,108 +83,96 @@ def bird_cor(scale):
     return birdRelativeCords
 
 
-def draw_bird(xBird, yBird, birdScale):
+def draw_bird(xbird, ybird, birdscale):
     """
     Рисует птицу, размер которой пропорционален Scale, а координаты левой верхней точки равны xBird, yBird
-    :param xBird: координата левой верхней точки птицы по горизонтальной оси
-    :param yBird: координата левой верхней точки птицы птицы по вертикальной оси
-    :param birdScale: коэффициент пропорциональности размера птицы
+    :param xbird: координата левой верхней точки птицы по горизонтальной оси
+    :param ybird: координата левой верхней точки птицы птицы по вертикальной оси
+    :param birdscale: коэффициент пропорциональности размера птицы
     """
-    birdRelativeCords = bird_cor(birdScale)
+    birdRelativeCords = bird_cor(birdscale)
     birdCords = []
     for cordsPair in birdRelativeCords:
-        cordsPair = (cordsPair[0] + xBird, cordsPair[1] + yBird)
+        cordsPair = (cordsPair[0] + xbird, cordsPair[1] + ybird)
         birdCords.append(cordsPair)
-    dr.polygon(screen, birdColor, birdCords)
-
-
-
-
+    polygon(screen, birdColor, birdCords)
 
 
 def cor_firstpoint_back_mountains():
     """
     Возвращает пару координат начальной точки задних гор
     """
-    return CorsFirstpointBackMountains
+    return cordsFirstpointBackMountains
+
 
 def cor_left_slide_segment():
     """
-    Возвращает массив координат первого слева сглаженного сегмента задних гор
+    Рассчитывает вертикальные координаты первого слева сглаженного сегмента задних гор и
+    возвращает массив координат(x, y) первого слева сглаженного сегмента задних гор
     """
+    cords = []
+    for _x in xLeftSlideCorBackMount:
+        _y = 220 - ((_x - 10) ** 2 // 340)
+        cords.append((_x, _y))
+    return cords
+
 
 def cor_left_angular_segment():
     """
     Возвращает массив координат первого угловатого сегмента задних гор
     """
+    return cordsLeftAngularSegment
+
 
 def cor_center_slide_segment():
     """
-    Возвращает массив координат второго слева сглаженного сегмента задних гор
+    Рассчитывает вертикальные координаты второго слева сглаженного сегмента задних гор и
+    возвращает массив координат(x, y) второго слева сглаженного сегмента задних гор
     """
+    cords = []
+    for _x in xCenterSlideCorBackMount:
+        _y = 3 * cos((_x - 550) * 1.2 / 180 * pi) * (_x - 600) / 4 + 175
+        cords.append((_x, _y))
+    return cords
 
-def cor_center_angular_segment():
-    """
-    Возвращает массив координат второго угловатого сегмента задних гор
-    """
-
-def cor_right_slide_segment():
-    """
-    Возвращает массив координат третьего слева сглаженного сегмента задних гор
-    """
 
 def cor_right_angular_segment():
     """
-    Возвращает массив координат третьего угловатого сегмента задних гор
+    Возвращает массив координат второго угловатого сегмента задних гор
     """
-
-def draw_back_mountain():
-    backMountainsCors = []
-    backMountainsCors.append(cor_firstpoint_back_mountains())
-    backMountainsCors.append(cor_left_slide_segment())
-    backMountainsCors.append(cor_left_angular_segment())
-    backMountainsCors.append(cor_center_slide_segment())
-    backMountainsCors.append(cor_center_angular_segment())
-    backMountainsCors.append(cor_right_slide_segment())
-    backMountainsCors.append(cor_right_angular_segment())
+    return cordsRightAngularSegment
 
 
-# background mountains:
-x1 = np.arange(0, 230, 1)
-xy1 = [(5, 280)]
+def cor_right_slide_segment():
+    """
+    Рассчитывает вертикальные координаты третьего слева сглаженного сегмента задних гор и
+    возвращает массив координат(x, y) третьего слева сглаженного сегмента задних гор
+    """
+    cords = []
+    for _x in xRightSlideCorBackMount:
+        _y = 145 + ((_x - 820) / 1.5) ** 2 / 100
+        cords.append((_x, _y))
+    return cords
 
-# 1st slide:
-for el in x1:
-    if el <= 200:
-        T = el + 10, 220 - (el ** 2 // 340)
-        xy1.append(T)
 
-# mountains-1:
-xy1.append((250, 115))
-xy1.append((265, 140))
-xy1.append((380, 230))
-xy1.append((437, 223))
-xy1.append((470, 240))
-xy1.append((510, 190))
-xy1.append((560, 200))
-xy1.append((590, 175))
+def cor_endpoints_back_mountains():
+    """
+    Возвращает две пары координат конечных точек задних гор
+    """
+    return cordsEndpointsBackMountains
 
-# 2nd slide:
-for el in x1:
-    T = el / 1.5 + 590, 2 * np.cos(el / 180 * np.pi) * el / 5 + 175
-    xy1.append(T)
 
-xy1.append((800, 155))
-xy1.append((835, 145))
+def draw_back_mountains():
+    backMountainsCords = cor_firstpoint_back_mountains() + \
+                         cor_left_slide_segment() + \
+                         cor_left_angular_segment() + \
+                         cor_center_slide_segment() + \
+                         cor_right_angular_segment() + \
+                         cor_right_slide_segment() + \
+                         cor_endpoints_back_mountains()
 
-# 3rd slide:
-for el in x1:
-    if el <= 60:
-        T = el + 835, 145 + el ** 2 / 100
-        xy1.append(T)
+    polygon(screen, backMountainColor, backMountainsCords)
 
-xy1.append((930, 165))
-xy1.append((1000, 208))
 
 # foreground mountains:
 x2 = np.arange(0, 201, 1)
@@ -223,15 +219,15 @@ for el in x3:
 xy3.append((1000, 667))
 xy3.append((0, 667))
 
-dr.polygon(screen, TOPSKY, [(0, 0), (1000, 0), (1000, 133), (0, 133)])
-dr.polygon(screen, BOTSKY, [(0, 133), (1000, 133), (1000, 266), (0, 266)])
-dr.polygon(screen, TOPGR, [(0, 266), (1000, 266), (1000, 399), (0, 399)])
-dr.circle(screen, SUN, (450, 125), 45)
-dr.polygon(screen, BACKMNT, xy1)
-dr.ellipse(screen, FOREMNT, (10, 225, 175, 480))
-dr.polygon(screen, FOREMNT, xy2)
-dr.polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
-dr.polygon(screen, NEWMNT, xy3)
+polygon(screen, TOPSKY, [(0, 0), (1000, 0), (1000, 133), (0, 133)])
+polygon(screen, BOTSKY, [(0, 133), (1000, 133), (1000, 266), (0, 266)])
+polygon(screen, TOPGR, [(0, 266), (1000, 266), (1000, 399), (0, 399)])
+circle(screen, SUN, (450, 125), 45)
+# polygon(screen, backMountainColor, xy1)
+ellipse(screen, FOREMNT, (10, 225, 175, 480))
+polygon(screen, FOREMNT, xy2)
+polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
+polygon(screen, NEWMNT, xy3)
 
 
 def draw_birds(birdsParametrs):
@@ -242,7 +238,13 @@ def draw_birds(birdsParametrs):
         draw_bird(xBird, yBird, scale)
 
 
-draw_birds(birdsParametrs)
+def draw_picture():
+    draw_birds(birdsParametrs)
+    draw_back_mountains()
+    # draw_mid_mountains()
+
+
+draw_picture()
 
 pygame.display.update()
 clock = pygame.time.Clock()

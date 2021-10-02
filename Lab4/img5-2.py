@@ -1,5 +1,5 @@
 import pygame
-from pygame.draw import polygon, circle, ellipse, rect
+from pygame.draw import polygon, circle
 import numpy as np
 from math import cos, pi, sin
 
@@ -109,6 +109,14 @@ def draw_bird(xbird, ybird, birdscale):
     polygon(screen, birdColor, birdCords)
 
 
+def draw_birds(birdsparametrs):
+    for birdParametrs in birdsparametrs:
+        xBird = birdParametrs[0]
+        yBird = birdParametrs[1]
+        scale = birdParametrs[2]
+        draw_bird(xBird, yBird, scale)
+
+
 def cor_firstpoint_back_mountains():
     """
     Возвращает пару координат начальной точки задних гор
@@ -203,7 +211,7 @@ def cor_left_slide_mid_segment():
     cords = []
     for _x in xLeftSlideCorMidMount:
         _y = (_x - 90) ** 2 / 50 + 220
-        cords.append((_x, _y))
+        cords.append((round(_x), round(_y)))
     return cords
 
 
@@ -222,7 +230,7 @@ def cor_right_slide_mid_segment():
     cords = []
     for _x in xRightSlideCorMidMount:
         _y = 335 - 60 * sin((_x - 540) / 200 * pi)
-        cords.append((_x, _y))
+        cords.append((round(_x), round(_y)))
     return cords
 
 
@@ -236,6 +244,19 @@ def cor_endpoints_mid_mountains():
 def draw_mid_mountains():
     """
     Рисует горы среднего плана по полученным из используемых функций координатам
+    """
+    midMountainsCords = cor_firstpoints_mid_mountains() + \
+                        cor_left_slide_mid_segment() + \
+                        cor_angular_mid_segment() + \
+                        cor_right_slide_mid_segment() + \
+                        cor_endpoints_mid_mountains()
+
+    polygon(screen, midMountainColor, midMountainsCords)
+
+
+def draw_front_mountains():
+    """
+    Рисует горы переднего плана по полученным из используемых функций координатам
     """
     midMountainsCords = cor_firstpoints_mid_mountains() + \
                         cor_left_slide_mid_segment() + \
@@ -281,17 +302,12 @@ polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
 polygon(screen, NEWMNT, xy3)
 
 
-def draw_birds(birdsParametrs):
-    for birdParametrs in birdsParametrs:
-        xBird = birdParametrs[0]
-        yBird = birdParametrs[1]
-        scale = birdParametrs[2]
-        draw_bird(xBird, yBird, scale)
-
-
 def draw_picture():
+    
     draw_back_mountains()
     draw_mid_mountains()
+    draw_front_mountains()
+
     draw_birds(birdsParametrs)
 
 

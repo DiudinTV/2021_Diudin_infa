@@ -8,14 +8,14 @@ pygame.init()
 FPS = 30
 screen = pygame.display.set_mode((1000, 667))
 
-TOPSKY = (254, 213, 162)
-BOTSKY = (254, 213, 196)
-SUN = (252, 238, 33)
+topSkyColor = (254, 213, 162)
+midSkyColor = (254, 213, 196)
+sunColor = (252, 238, 33)
 backMountainColor = (252, 152, 49)
 midMountainColor = (172, 67, 52)
 frontMountainColor = (48, 16, 38)
-TOPGR = (254, 213, 148)
-BOTGR = (179, 134, 148)
+lowSkyColor = (254, 213, 148)
+waterColor = (179, 134, 148)
 birdColor = (66, 33, 11)
 
 # bird parameters
@@ -48,6 +48,14 @@ xLeftSlideCorFrontMount = np.arange(70, 350, 1)
 xRightSlideCorFrontMount = np.arange(550, 1000, 1)
 cordsFrontAngularSegment = [(500, 550), (550, 570)]
 cordsEndpointsFrontMountains = [(1000, 667)]
+
+# background parameters
+topSkyCords = [(0, 0), (1000, 0), (1000, 133), (0, 133)]
+midSkyCords = [(0, 133), (1000, 133), (1000, 266), (0, 266)]
+rSun = 45
+cordsSun = (450, 125)
+waterCords = [(0, 389), (1000, 389), (1000, 667), (0, 667)]
+lowSkyCords = [(0, 266), (1000, 266), (1000, 399), (0, 399)]
 
 
 def y_bird_up(_x, scale):
@@ -117,6 +125,10 @@ def draw_bird(xbird, ybird, birdscale):
 
 
 def draw_birds(birdsparametrs):
+    """
+    Рисует птицу
+    :param birdsparametrs: координаты и коэффициент пропорциональности размера птицы
+    """
     for birdParametrs in birdsparametrs:
         xBird = birdParametrs[0]
         yBird = birdParametrs[1]
@@ -319,15 +331,57 @@ def draw_front_mountains():
     polygon(screen, frontMountainColor, midMountainsCords)
 
 
-polygon(screen, TOPSKY, [(0, 0), (1000, 0), (1000, 133), (0, 133)])
-polygon(screen, BOTSKY, [(0, 133), (1000, 133), (1000, 266), (0, 266)])
-polygon(screen, TOPGR, [(0, 266), (1000, 266), (1000, 399), (0, 399)])
-circle(screen, SUN, (450, 125), 45)
-polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
+def draw_top_sky():
+    """
+    Рисование верхней части неба
+    """
+    polygon(screen, topSkyColor, topSkyCords)
 
+
+def draw_mid_sky():
+    """
+    Рисование средней части неба
+    """
+    polygon(screen, midSkyColor, midSkyCords)
+
+
+def draw_low_sky():
+    """
+    Рисование нижних облаков
+    """
+    polygon(screen, lowSkyColor, lowSkyCords)
+
+
+def draw_water():
+    """
+    Рисование воды
+    """
+    polygon(screen, waterColor, waterCords)
+
+
+def draw_sun():
+    """
+    Рисование солнца
+    """
+    circle(screen, sunColor, cordsSun, rSun)
+
+
+def draw_background():
+    """
+    Рисование фрагментов неба и воды
+    """
+    draw_top_sky()
+    draw_mid_sky()
+    draw_low_sky()
+    draw_water()
+    draw_sun()
 
 
 def draw_picture():
+    """
+    Рисование полной картинки
+    """
+    draw_background()
     draw_back_mountains()
     draw_mid_mountains()
     draw_front_mountains()

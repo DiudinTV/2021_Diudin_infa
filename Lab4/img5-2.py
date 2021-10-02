@@ -13,7 +13,7 @@ BOTSKY = (254, 213, 196)
 SUN = (252, 238, 33)
 backMountainColor = (252, 152, 49)
 midMountainColor = (172, 67, 52)
-NEWMNT = (48, 16, 38)
+frontMountainColor = (48, 16, 38)
 TOPGR = (254, 213, 148)
 BOTGR = (179, 134, 148)
 birdColor = (66, 33, 11)
@@ -41,6 +41,13 @@ cordsMidAngularSegment = [(180, 380), (220, 330), (270, 360), (300, 285),
                           (380, 300), (450, 350), (540, 335)]
 cordsEndpointsMidMountains = [(845, 290), (885, 325), (915, 290), (955, 300),
                               (1000, 240), (1000, 400)]
+
+# frontmountains parameters
+cordsFirstpointsFrontMountains = [(0, 667), (0, 320)]
+xLeftSlideCorFrontMount = np.arange(70, 350, 1)
+xRightSlideCorFrontMount = np.arange(550, 1000, 1)
+cordsFrontAngularSegment = [(500, 550), (550, 570)]
+cordsEndpointsFrontMountains = [(1000, 667)]
 
 
 def y_bird_up(_x, scale):
@@ -254,56 +261,73 @@ def draw_mid_mountains():
     polygon(screen, midMountainColor, midMountainsCords)
 
 
+def cor_firstpoints_front_mountains():
+    """
+    Возвращает массив пар координат начальных точек передних гор
+    """
+    return cordsFirstpointsFrontMountains
+
+
+def cor_left_slide_front_segment():
+    """
+    Рассчитывает вертикальные координаты первого слева сглаженного сегмента передних гор и
+    возвращает массив координат(x, y) первого слева сглаженного сегмента передних гор
+    """
+    cords = []
+    for _x in xLeftSlideCorFrontMount:
+        _y = (-((_x - 320) * 2) ** 2 / 1000) + 620
+        cords.append((round(_x), round(_y)))
+    return cords
+
+
+def cor_left_angular_front_segment():
+    """
+    Возвращает массив координат угловатого сегмента передних гор
+    """
+    return cordsFrontAngularSegment
+
+
+def cor_right_slide_front_segment():
+    """
+    Рассчитывает вертикальные координаты второго слева сглаженного сегмента передних гор и
+    возвращает массив координат(x, y) второго слева сглаженного сегмента передних гор
+    """
+    cords = []
+    for _x in xRightSlideCorFrontMount:
+        _y = 510 + sin((_x - 500) / 300 * pi) * 120
+        cords.append((round(_x), round(_y)))
+    return cords
+
+
+def cor_endpoints_front_mountains():
+    """
+    Возвращает массив пар координат конечных точек передних гор
+    """
+    return cordsEndpointsFrontMountains
+
+
 def draw_front_mountains():
     """
     Рисует горы переднего плана по полученным из используемых функций координатам
     """
-    midMountainsCords = cor_firstpoints_mid_mountains() + \
-                        cor_left_slide_mid_segment() + \
-                        cor_angular_mid_segment() + \
-                        cor_right_slide_mid_segment() + \
-                        cor_endpoints_mid_mountains()
+    midMountainsCords = cor_firstpoints_front_mountains() + \
+                        cor_left_slide_front_segment() + \
+                        cor_left_angular_front_segment() + \
+                        cor_right_slide_front_segment() + \
+                        cor_endpoints_front_mountains()
 
-    polygon(screen, midMountainColor, midMountainsCords)
+    polygon(screen, frontMountainColor, midMountainsCords)
 
-
-# new mountains:
-x3 = x2 = np.arange(200, 0, -1)
-xy3 = [(0, 320), (120, 340), (230, 520)]
-
-# prelast slide:
-for el in x3:
-    T = 430 - el, (-el ** 2 / 400) + 620
-    xy3.append(T)
-
-xy3.append((500, 640))
-xy3.append((650, 540))
-xy3.append((710, 570))
-
-# last slide:
-for el in x3:
-    T = 910 - el, (-(el - 160) ** 2 / 200) + 578
-    xy3.append(T)
-for el in x3:
-    if el >= 110:
-        T = 1110 - el, 450 - (np.sin(el / 200 * np.pi) * 82)
-        xy3.append(T)
-
-xy3.append((1000, 667))
-xy3.append((0, 667))
 
 polygon(screen, TOPSKY, [(0, 0), (1000, 0), (1000, 133), (0, 133)])
 polygon(screen, BOTSKY, [(0, 133), (1000, 133), (1000, 266), (0, 266)])
 polygon(screen, TOPGR, [(0, 266), (1000, 266), (1000, 399), (0, 399)])
 circle(screen, SUN, (450, 125), 45)
-# polygon(screen, backMountainColor, xy1)
-# polygon(screen, FOREMNT, xy2)
 polygon(screen, BOTGR, [(0, 409), (1000, 409), (1000, 667), (0, 667)])
-polygon(screen, NEWMNT, xy3)
+
 
 
 def draw_picture():
-    
     draw_back_mountains()
     draw_mid_mountains()
     draw_front_mountains()

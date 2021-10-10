@@ -11,7 +11,20 @@ level = 0
 wall_count = -1
 possible_shape_number_maximum = 0
 shape_list = []
-count = 499
+count = 0
+
+start_ball_speed = 6  # starting speed of shapes
+start_square_speed = 3
+start_wall_speed = 10
+ball_speed = start_ball_speed
+square_speed = start_square_speed
+wall_speed = start_wall_speed
+
+start_wall_width = 50
+wall_width = start_wall_width
+square_fracture_acceleration = 5  # clicked big square will fracture, new squares gain extra speed before hitting wall
+number_of_shapes = 8  # don't set more then 20
+level_goal = 10
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -28,30 +41,20 @@ GREY = (100, 100, 100)
 COLORS = [WHITE, YELLOW, MAGENTA, CYAN, RED, GREEN, BLUE, BLACK, GREY, GREY]
 TEXT_COLORS = [BLACK, BLUE, GREEN, RED, CYAN, MAGENTA, YELLOW, WHITE, BLACK, BLACK]
 WALL_COLORS = [DARK_RED, DARK_GREEN, DARK_BLUE, GREY]
-MESSAGE_LIST2 = ["clicking on background subtracts points", "for every 50 points gained, level changes",
+MESSAGE_LIST2 = ["clicking on background subtracts points",
+                 "for every " + str(level_goal) + " points gained, level changes",
                  "every square hit gives equal amount of points", "are present, no more squares will appear",
                  "will result in losing points", "faster and thinner, but subtract the same amount",
                  "from all sources is equal to level number",
                  "gives bonus points for every additional figure",
-                 "gain " + str(500 * ((count + 500) // 500)) + " to loop"]
+                 "gain " + str(10 * level_goal) + " points to loop"]
 MESSAGE_LIST = ["Hit balls to get points", "Smaller balls give more points", "Squares fracture when hit",
-                "If 2 medium or 1 big square", "Hitting moving wall spaces", "New walls will be",
+                "If " + str((number_of_shapes + 3) // 4) + " medium or 1 big square", "Hitting moving wall spaces",
+                "New walls will be",
                 "Number of subtracted points", "Hitting 2+ figures with 1 click", "No more figures will appear"]
 level_color = WHITE
 active_colors = [COLORS[i] for i in range(8)]
 active_colors.pop(active_colors.index(level_color))
-
-start_ball_speed = 6  # starting speed of shapes
-start_square_speed = 3
-start_wall_speed = 10
-ball_speed = start_ball_speed
-square_speed = start_square_speed
-wall_speed = start_wall_speed
-
-start_wall_width = 50
-wall_width = start_wall_width
-square_fracture_acceleration = 5  # clicked big square will fracture, new squares gain extra speed before hitting wall
-number_of_shapes = 8
 
 
 def update_screen():
@@ -180,7 +183,7 @@ def click(event_name):
                                 shape_list.pop(shape_list.index(shape))
                                 fee -= level + 1
                                 count += 2
-    count = max(count - fee, count - count % 500)
+    count = max(count - fee, count - count % (10 * level_goal))
     return score()
 
 
@@ -191,7 +194,9 @@ def score():
     :return: number of current level (-1)
     """
     global level_color, active_colors
-    level_number = (count % 500) // 50
+    level_number = (count % (10 * level_goal)) // level_goal
+    MESSAGE_LIST2[8] = "gain " + str(
+        10 * level_goal * ((count + 10 * level_goal) // (10 * level_goal))) + " points to loop"
     if level_number == 9:
         level_number = 8
     level_color = COLORS[level_number]
@@ -287,8 +292,8 @@ while not finished:
         wall = ["wall", 1, 1, wall_width * (4 - wall_count), WALL_COLORS[wall_count], wall_speed * (wall_count + 1), 0]
         shape_list.append(shape_list[wall_count])
         shape_list[wall_count] = wall
-    if len(shape_list) - wall_count < number_of_shapes and (count % 500) < 400:
-        if random() >= 0.2 or level <= 1 or possible_shape_number_maximum >= 2 * number_of_shapes - wall_count + 3:
+    elif len(shape_list) - wall_count - 1 < number_of_shapes:
+        if random() >= 0.2 or level <= 1 or possible_shape_number_maximum >= 2 * number_of_shapes - 1:
             ball_speed = start_ball_speed + level
             possible_shape_number_maximum += new_ball(ball_speed)
         else:

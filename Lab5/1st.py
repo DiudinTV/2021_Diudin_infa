@@ -8,10 +8,10 @@ FPS = 30
 screen = pygame.display.set_mode((1250, 750))
 
 level = 0
-wall_count = 0
+wall_count = -1
 possible_shape_number_maximum = 0
 shape_list = []
-count = 335
+count = 499
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -28,9 +28,18 @@ GREY = (100, 100, 100)
 COLORS = [WHITE, YELLOW, MAGENTA, CYAN, RED, GREEN, BLUE, BLACK, GREY, GREY]
 TEXT_COLORS = [BLACK, BLUE, GREEN, RED, CYAN, MAGENTA, YELLOW, WHITE, BLACK, BLACK]
 WALL_COLORS = [DARK_RED, DARK_GREEN, DARK_BLUE, GREY]
-level_color = BLACK
+MESSAGE_LIST2 = ["clicking on background subtracts points", "for every 50 points gained, level changes",
+                 "every square hit gives equal amount of points", "are present, no more squares will appear",
+                 "will result in losing points", "faster and thinner, but subtract the same amount",
+                 "from all sources is equal to level number",
+                 "gives bonus points for every additional figure",
+                 "gain " + str(500 * ((count + 500) // 500)) + " to loop"]
+MESSAGE_LIST = ["Hit balls to get points", "Smaller balls give more points", "Squares fracture when hit",
+                "If 2 medium or 1 big square", "Hitting moving wall spaces", "New walls will be",
+                "Number of subtracted points", "Hitting 2+ figures with 1 click", "No more figures will appear"]
+level_color = WHITE
 active_colors = [COLORS[i] for i in range(8)]
-active_colors.pop(COLORS.index(level_color))
+active_colors.pop(active_colors.index(level_color))
 
 start_ball_speed = 6  # starting speed of shapes
 start_square_speed = 3
@@ -85,7 +94,7 @@ def new_ball(speed):
         direction_y *= 1 / abs(direction_y)
     vx = speed * random() * direction_x
     vy = (speed ** 2 - vx ** 2) ** (1 / 2) * direction_y
-    color = active_colors[randint(0, 6)]
+    color = active_colors[randint(0, 5)]
     dr.circle(screen, color, (x, y), r)
     shape_list.append(["ball", x, y, r, color, vx, vy])
     return 1
@@ -113,7 +122,7 @@ def new_square(speed):
         direction_y *= 1 / abs(direction_y)
     vx = speed * random() * direction_x
     vy = (speed ** 2 - vx ** 2) ** (1 / 2) * direction_y
-    color = active_colors[randint(0, 6)]
+    color = active_colors[randint(0, 5)]
     dr.circle(screen, color, (x, y), a)
     shape_list.append(["square", x, y, a, color, vx, vy])
     if a <= 160:
@@ -131,21 +140,26 @@ def click(event_name):
     :return: number of level after click
     """
     global count, possible_shape_number_maximum
-    ch = 1
+    fee = level + 1  # how many points will be lost for clicking
     for shape in shape_list:
-        if shape[0] == "ball":
+        if shape[0] == "wall":
+            if event_name.pos[0] >= shape[1] - 1:
+                if event_name.pos[0] <= shape[1] - 1 + shape[3]:
+                    fee += level + 1
+
+        elif shape[0] == "ball":
             if (event_name.pos[0] - shape[1]) ** 2 + (event_name.pos[1] - shape[2]) ** 2 <= shape[3] ** 2:
                 possible_shape_number_maximum -= 1
                 count += 6 - (shape[3] + 10) // 20
                 shape_list.pop(shape_list.index(shape))
                 update_screen()
-                ch = 0
-        if shape[0] == "square":
+                fee -= level + 1
+
+        elif shape[0] == "square":
             if event_name.pos[0] >= shape[1]:
                 if event_name.pos[0] <= shape[1] + shape[3]:
                     if event_name.pos[1] >= shape[2]:
                         if event_name.pos[1] <= shape[2] + shape[3]:
-                            ch = 0
                             possible_shape_number_maximum -= 1
                             if shape[3] > 80:
                                 shape_list.append([shape[0], shape[1], shape[2], shape[3] / 2, shape[4],
@@ -164,8 +178,9 @@ def click(event_name):
                                 shape_list.pop(shape_list.index(shape))
                             else:
                                 shape_list.pop(shape_list.index(shape))
+                                fee -= level + 1
                                 count += 2
-    count = max(count - ch * count // 20, count - count % 500)
+    count = max(count - fee, count - count % 500)
     return score()
 
 
@@ -183,16 +198,21 @@ def score():
     text_color = TEXT_COLORS[level_number]
     if level_number != 8:
         active_colors = [COLORS[j] for j in range(8)]
-        active_colors.pop(COLORS.index(level_color))
+        active_colors.pop(active_colors.index(level_color))
+        active_colors.pop(active_colors.index(text_color))
     update_screen()
     font = pygame.font.Font(None, 120)
+    font2 = pygame.font.Font(None, 60)
     score_counter = font.render(str(count), True, text_color)
     level_counter = font.render(str(level_number + 1), True, text_color)
-    message = font.render("There will be no more shapes", True, text_color)
+    message = font.render(MESSAGE_LIST[level], True, text_color)
+    message2 = font2.render(MESSAGE_LIST2[level], True, text_color)
+    place = message.get_rect(center=(625, 305))
+    place2 = message2.get_rect(center=(625, 385))
     screen.blit(score_counter, (20, 20))
     screen.blit(level_counter, (1170, 20))
-    if level_number == 8:
-        screen.blit(message, (20, 350))
+    screen.blit(message, place)
+    screen.blit(message2, place2)
     return level_number
 
 
@@ -254,15 +274,19 @@ while not finished:
             final_score = count
         elif event.type == pygame.MOUSEBUTTONDOWN:
             level = click(event)
-    if level >= 4 and level != 8 and wall_count < (level - 3):
+    if level == 8:
+        for i in range(wall_count + 1):
+            shape_list.pop(0)
+            wall_count -= 1
+    elif 3 <= level < wall_count + 4:
+        while level < wall_count + 4:
+            shape_list.pop(wall_count)
+            wall_count -= 1
+    elif level >= 4 and len(shape_list) != 0 and wall_count + 4 < level:
+        wall_count += 1
         wall = ["wall", 1, 1, wall_width * (4 - wall_count), WALL_COLORS[wall_count], wall_speed * (wall_count + 1), 0]
         shape_list.append(shape_list[wall_count])
         shape_list[wall_count] = wall
-        wall_count += 1
-    elif level == 8:
-        for i in range(wall_count):
-            shape_list.pop(0)
-            wall_count -= 1
     if len(shape_list) - wall_count < number_of_shapes and (count % 500) < 400:
         if random() >= 0.2 or level <= 1 or possible_shape_number_maximum >= 2 * number_of_shapes - wall_count + 3:
             ball_speed = start_ball_speed + level
@@ -270,8 +294,6 @@ while not finished:
         else:
             square_speed = start_square_speed + level / 2
             possible_shape_number_maximum += new_square(square_speed)
-    elif (count % 500) >= 450:
-        count += 50
 
     move_shapes()
     pygame.display.update()

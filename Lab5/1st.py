@@ -7,6 +7,7 @@ pygame.init()
 FPS = 30
 screen = pygame.display.set_mode((1250, 750))
 
+time = 0
 level = 0
 wall_count = -1
 possible_shape_number_maximum = 0
@@ -24,7 +25,7 @@ start_wall_width = 50
 wall_width = start_wall_width
 square_fracture_acceleration = 5  # clicked big square will fracture, new squares gain extra speed before hitting wall
 number_of_shapes = 8  # don't set more then 20
-level_goal = 10
+level_goal = 50
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -210,12 +211,16 @@ def score():
     font2 = pygame.font.Font(None, 60)
     score_counter = font.render(str(count), True, text_color)
     level_counter = font.render(str(level_number + 1), True, text_color)
+    time_counter = font.render((2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
+                2 - len(str((time // 30) % 60))) * "0" + str((time // 30) % 60), True, text_color)
     message = font.render(MESSAGE_LIST[level], True, text_color)
     message2 = font2.render(MESSAGE_LIST2[level], True, text_color)
     place = message.get_rect(center=(625, 305))
     place2 = message2.get_rect(center=(625, 385))
+    time_place = time_counter.get_rect(center=(625, 60))
+    screen.blit(time_counter, time_place)
     screen.blit(score_counter, (20, 20))
-    screen.blit(level_counter, (1170, 20))
+    screen.blit(level_counter, (1190, 20))
     screen.blit(message, place)
     screen.blit(message2, place2)
     return level_number
@@ -300,6 +305,7 @@ while not finished:
             square_speed = start_square_speed + level / 2
             possible_shape_number_maximum += new_square(square_speed)
 
+    time += 1
     move_shapes()
     pygame.display.update()
 

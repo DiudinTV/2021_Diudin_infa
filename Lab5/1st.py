@@ -7,6 +7,24 @@ pygame.init()
 FPS = 30
 screen = pygame.display.set_mode((1250, 750))
 
+leaders_number = 12
+leaderboard = open("Leaderboard", "r")
+leaders = leaderboard.read().split()
+output_leaderboard = open("Leaderboard", "w")
+for i in range(3):
+    leaders.pop(0)
+while len(leaders) // 3 < leaders_number:
+    leaders.append("UNTITLED")
+    leaders.append("0")
+    leaders.append("00:00")
+
+print("Enter your name:")
+name = input()
+if name == "":
+    name = "UNTITLED"
+elif len(name) >= 12:
+    name = name[0: 12]
+
 time = 0
 level = 0
 wall_count = -1
@@ -203,24 +221,38 @@ def score():
     level_color = COLORS[level_number]
     text_color = TEXT_COLORS[level_number]
     if level_number != 8:
-        active_colors = [COLORS[j] for j in range(8)]
+        active_colors = [COLORS[u] for u in range(8)]
         active_colors.pop(active_colors.index(level_color))
         active_colors.pop(active_colors.index(text_color))
     update_screen()
     font = pygame.font.Font(None, 120)
     font2 = pygame.font.Font(None, 60)
-    score_counter = font.render(str(count), True, text_color)
-    level_counter = font.render(str(level_number + 1), True, text_color)
-    time_counter = font.render((2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
+    if 10 * 30 >= time:
+        score_counter = font.render(str(count) + " = score", True, text_color)
+        level_counter = font.render("level = " + str(level_number + 1), True, text_color)
+        time_counter = font.render((2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
                 2 - len(str((time // 30) % 60))) * "0" + str((time // 30) % 60), True, text_color)
+    elif 10 * 30 < time <= 20 * 30:
+        time_counter = font.render((2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
+                2 - len(str((time // 30) % 60))) * "0" + str((time // 30) % 60) + " (1 hour time limit)", True,
+                                   text_color)
+        score_counter = font.render(str(count), True, text_color)
+        level_counter = font.render(str(level_number + 1), True, text_color)
+    else:
+        time_counter = font.render((2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
+                2 - len(str((time // 30) % 60))) * "0" + str((time // 30) % 60), True, text_color)
+        score_counter = font.render(str(count), True, text_color)
+        level_counter = font.render(str(level_number + 1), True, text_color)
     message = font.render(MESSAGE_LIST[level], True, text_color)
     message2 = font2.render(MESSAGE_LIST2[level], True, text_color)
     place = message.get_rect(center=(625, 305))
     place2 = message2.get_rect(center=(625, 385))
     time_place = time_counter.get_rect(center=(625, 60))
+    score_place = score_counter.get_rect(topleft=(20, 20))
+    level_place = level_counter.get_rect(topright=(1230, 20))
     screen.blit(time_counter, time_place)
-    screen.blit(score_counter, (20, 20))
-    screen.blit(level_counter, (1190, 20))
+    screen.blit(score_counter, score_place)
+    screen.blit(level_counter, level_place)
     screen.blit(message, place)
     screen.blit(message2, place2)
     return level_number
@@ -279,9 +311,31 @@ score()
 while not finished:
     clock.tick(FPS)
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or time >= 30 * 60 * 60:
             finished = True
-            final_score = count
+            final_score = str(count)
+            final_time = (2 - len(str((time // 30) // 60))) * "0" + str((time // 30) // 60) + ":" + (
+                    2 - len(str((time // 30) % 60))) * "0" + str((time // 30) % 60)
+            leaders.append(name)
+            leaders.append(final_score)
+            leaders.append(final_time)
+            if len(leaders) > 3 * leaders_number:
+                print(leaders, len(leaders))
+                for i in range(len(leaders) // 3 - 1):
+                    if int(leaders[len(leaders) - 2 - i * 3]) > int(leaders[len(leaders) - 2 - (i + 1) * 3]):
+                        leaders[len(leaders) - 2 - i * 3] = leaders[len(leaders) - 2 - (i + 1) * 3]
+                        leaders[len(leaders) - 1 - i * 3] = leaders[len(leaders) - 1 - (i + 1) * 3]
+                        leaders[len(leaders) - 3 - i * 3] = leaders[len(leaders) - 3 - (i + 1) * 3]
+                        leaders[len(leaders) - 2 - (i + 1) * 3] = final_score
+                        leaders[len(leaders) - 1 - (i + 1) * 3] = final_time
+                        leaders[len(leaders) - 3 - (i + 1) * 3] = name
+                while len(leaders) > 3 * leaders_number:
+                    leaders.pop()
+            print("NAME            SCORE       TIME", file=output_leaderboard)
+            for j in range(len(leaders) // 3):
+                print(leaders[j * 3] + " " * (16 - len(leaders[j * 3])) + leaders[j * 3 + 1] + " " * (
+                            12 - len(leaders[j * 3 + 1])) + leaders[j * 3 + 2], file=output_leaderboard)
+
         elif event.type == pygame.MOUSEBUTTONDOWN:
             level = click(event)
     if level == 8:
@@ -305,7 +359,7 @@ while not finished:
             square_speed = start_square_speed + level / 2
             possible_shape_number_maximum += new_square(square_speed)
 
-    time += 1
+    time += 1  # actually number of frames
     move_shapes()
     pygame.display.update()
 

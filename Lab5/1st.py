@@ -25,7 +25,7 @@ if name == "":
 elif len(name) >= 12:
     name = name[0: 12]
 
-time = 0
+time = 59 * 60 * 30
 level = 0
 wall_count = -1
 possible_shape_number_maximum = 0
@@ -320,21 +320,27 @@ while not finished:
             leaders.append(final_score)
             leaders.append(final_time)
             if len(leaders) > 3 * leaders_number:
-                print(leaders, len(leaders))
                 for i in range(len(leaders) // 3 - 1):
-                    if int(leaders[len(leaders) - 2 - i * 3]) > int(leaders[len(leaders) - 2 - (i + 1) * 3]):
-                        leaders[len(leaders) - 2 - i * 3] = leaders[len(leaders) - 2 - (i + 1) * 3]
-                        leaders[len(leaders) - 1 - i * 3] = leaders[len(leaders) - 1 - (i + 1) * 3]
-                        leaders[len(leaders) - 3 - i * 3] = leaders[len(leaders) - 3 - (i + 1) * 3]
-                        leaders[len(leaders) - 2 - (i + 1) * 3] = final_score
-                        leaders[len(leaders) - 1 - (i + 1) * 3] = final_time
-                        leaders[len(leaders) - 3 - (i + 1) * 3] = name
+                    if int(leaders[len(leaders) - 2 - i * 3]) >= int(leaders[len(leaders) - 2 - (i + 1) * 3]):
+                        time1 = leaders[len(leaders) - 1 - i * 3].split(sep=":")
+                        time2 = leaders[len(leaders) - 1 - (i + 1) * 3].split(sep=":")
+                        time1 = int(time1[0]) * 60 + int(time1[1])
+                        time2 = int(time2[0]) * 60 + int(time2[1])
+                        if int(leaders[len(leaders) - 2 - i * 3]) > int(
+                                leaders[len(leaders) - 2 - (i + 1) * 3]) or time1 < time2:
+                            leaders[len(leaders) - 2 - i * 3] = leaders[len(leaders) - 2 - (i + 1) * 3]
+                            leaders[len(leaders) - 1 - i * 3] = leaders[len(leaders) - 1 - (i + 1) * 3]
+                            leaders[len(leaders) - 3 - i * 3] = leaders[len(leaders) - 3 - (i + 1) * 3]
+                            leaders[len(leaders) - 2 - (i + 1) * 3] = final_score
+                            leaders[len(leaders) - 1 - (i + 1) * 3] = final_time
+                            leaders[len(leaders) - 3 - (i + 1) * 3] = name
+
                 while len(leaders) > 3 * leaders_number:
                     leaders.pop()
             print("NAME            SCORE       TIME", file=output_leaderboard)
             for j in range(len(leaders) // 3):
                 print(leaders[j * 3] + " " * (16 - len(leaders[j * 3])) + leaders[j * 3 + 1] + " " * (
-                            12 - len(leaders[j * 3 + 1])) + leaders[j * 3 + 2], file=output_leaderboard)
+                        12 - len(leaders[j * 3 + 1])) + leaders[j * 3 + 2], file=output_leaderboard)
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             level = click(event)

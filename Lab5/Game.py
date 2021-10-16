@@ -147,8 +147,8 @@ def new_ball(speed):
 
     :return: number of created circles to control potential number of shapes on screen
     """
-    x = randint(100, 1100)
-    y = randint(200, 800)
+    x = randint(10, 1100)
+    y = randint(10, 650)
     if level == 0:
         r = 80
     else:
@@ -175,9 +175,9 @@ def new_square(speed):
 
     :return: number of potential squares stacked inside of created one to control potential number of shapes on screen
     """
-    x = randint(100, 800)
-    y = randint(200, 800)
-    if level == 2:
+    x = randint(10, 800)
+    y = randint(10, 400)
+    if level == 4:
         a = 120
     else:
         a = randint(81, 320)
@@ -206,9 +206,9 @@ def new_triangle(speed):
 
     :return: number of created triangles to control potential number of shapes on screen
     """
-    x = randint(100, 800)
-    y = randint(200, 800)
-    if level == 4:
+    x = randint(10, 1000)
+    y = randint(10, 500)
+    if level == 2:
         a = 200  # triangle base and height
     else:
         a = randint(120, 240)
@@ -217,9 +217,10 @@ def new_triangle(speed):
         direction_x *= 1 / abs(direction_x)
     vx = speed * direction_x
     vy = 0
+    lowest_vy = (2 * (750 - y - a) * triangle_acceleration) ** (1/2)
     color = active_colors[randint(0, 7)]
     dr.polygon(screen, color, [(x, y + a), (x + a, y + a), (x + a / 2, y)])
-    shape_list.append(["triangle", x, y, a, color, vx, vy])
+    shape_list.append(["triangle", x, y, a, color, vx, vy, lowest_vy])
     return 1
 
 
@@ -279,7 +280,7 @@ def click(event_name):
                     if y > 2 * (x - shape[1]) + shape[2] - shape[3]:
                         possible_shape_number_maximum -= 1
                         fee -= level + 1
-                        count += 3 - (shape[3] + 60) // 120
+                        count += 4 - (shape[3] + 40) // 90
                         shape_list.pop(shape_list.index(shape))
     count = max(count - fee, count - count % (loop * level_goal))
     return score()
@@ -360,8 +361,8 @@ def move_shapes():
             sizes = [shape_list[shape_number][3], 0] * 2
         elif shape_list[shape_number][0] == "triangle":
             sizes = [shape_list[shape_number][3], 0] * 2
+            hit_velocity = -shape_list[shape_number][7]
             shape_velocity = 0
-            hit_velocity = 0
         else:
             shape_velocity = 0
             hit_velocity = 0
@@ -383,18 +384,18 @@ def move_shapes():
             shape_list[shape_number][1] -= shape_list[shape_number][1] + sizes[0] - 1250
         if shape_list[shape_number][2] - sizes[3] <= 0:
             if shape_list[shape_number][0] == "triangle":
-                shape_list[shape_number][6] *= -0.5
+                shape_list[shape_number][6] *= -1
             else:
                 shape_list[shape_number][6] = (shape_velocity ** 2 - hit_velocity ** 2) ** (1 / 2)
                 shape_list[shape_number][5] = hit_velocity
             shape_list[shape_number][2] -= shape_list[shape_number][2] - sizes[3]
         elif shape_list[shape_number][2] + sizes[2] >= 750:
             if shape_list[shape_number][0] == "triangle":
-                shape_list[shape_number][6] *= -1
+                shape_list[shape_number][6] = hit_velocity
             else:
                 shape_list[shape_number][6] = -(shape_velocity ** 2 - hit_velocity ** 2) ** (1 / 2)
                 shape_list[shape_number][5] = hit_velocity
-            shape_list[shape_number][2] -= shape_list[shape_number][2] + sizes[2] - 750
+                shape_list[shape_number][2] -= shape_list[shape_number][2] + sizes[2] - 750
         update_screen()
         score()
 

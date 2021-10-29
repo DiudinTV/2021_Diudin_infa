@@ -24,7 +24,7 @@ LEFT_SHIFT = 1073742049
 RIGHT_SHIFT = 1073742053
 ZX = [122, 120]
 Q, E = 113, 101
-SQUARE_BRACKETS = [1093, 1098]
+SQUARE_BRACKETS = [91, 93]
 ONE_TO_FIVE = [49, 50, 51, 52, 53]
 SIX_TO_ZERO = [54, 55, 56, 57, 48]
 
@@ -50,8 +50,37 @@ def score(screen, points):
     screen.blit(score_counter2, score_place2)
 
 
-class Ball:
-    def __init__(self, screen: pygame.Surface, x, y, r, power):
+class Collidable:
+    def __init__(self, screen: pygame.Surface):
+        """ Конструктор класса Collidable """
+        self.screen = screen
+        self.live = 1
+        self.x = rnd.randint(0, WIDTH - 100)
+        self.y = rnd.randint(0, HEIGHT - 100)
+        self.r = 100
+        self.v = 10
+        self.vx = 2 * self.v * (rnd.random() - 0.5)
+        direction_y = rnd.random() - 0.5
+        if direction_y != 0:
+            direction_y /= abs(direction_y)
+        self.vy = (self.v ** 2 - self.vx ** 2) ** (1 / 2) * direction_y
+
+    def hit_test(self, obj):
+        """
+        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
+
+        Args:
+            obj: Обьект, с которым проверяется столкновение.
+        Returns:
+            Возвращает True в случае столкновения объектов. В противном случае возвращает False.
+        """
+        if self.r + obj.r >= ((self.x - obj.x) ** 2 + (self.y - obj.y) ** 2) ** (1 / 2):
+            return True
+        return False
+
+
+class Ball(Collidable):
+    def __init__(self, screen, x, y, r, power):
         """
         Конструктор класса Ball
 
@@ -61,13 +90,11 @@ class Ball:
         r - радиус мяча
         power - цвет мяча, отвечающий за то, какие цели тот может уничтожить
         """
+        super().__init__(screen)
         self.number = 0
-        self.screen = screen
         self.x = x
         self.y = y
         self.r = r
-        self.vx = 0
-        self.vy = 0
         self.color = power
         if self.color != BLACK:
             self.live = 70  # продолжительность жизни шаров, меньше для прямолетящих
@@ -86,49 +113,36 @@ class Ball:
         self.y -= self.vy
         if self.y - self.r < 0:
             self.y = self.r
-            self.vy *= -1
+            self.vy *= -0.9
         elif self.y + self.r > HEIGHT:
             self.y = HEIGHT - self.r
-            self.vy *= -1
+            self.vy *= -0.9
         else:
             if self.color == BLUE:
-                self.vy -= 1
+                self.vy -= 0.5
             elif self.color == YELLOW:
-                self.vy += 1
+                self.vy += 0.5
         if self.x + self.r > WIDTH:
             self.x = WIDTH - self.r
-            self.vx *= -1
+            self.vx *= -0.9
         elif self.x - self.r < 0:
             self.x = self.r
-            self.vx *= -1
+            self.vx *= -0.9
         else:
             if self.color == MAGENTA:
-                self.vx += 1
+                self.vx += 0.5
             elif self.color == CYAN:
-                self.vx -= 1
+                self.vx -= 0.5
 
     def draw(self):
         """ Рисует мяч. """
         pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
 
-    def hit_test(self, obj):
-        """
-        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
-        Args:
-            obj: Обьект, с которым проверяется столкновение.
-        Returns:
-            Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
-        """
-        if self.r + obj.r >= ((self.x - obj.x) ** 2 + (self.y - obj.y) ** 2) ** (1 / 2):
-            return True
-        return False
-
-
-class Gun:
+class Gun(Collidable):
     def __init__(self, screen, x, y, direction_keys, full_stop, change_keys, size_keys, fire, number):
         """
-        Конструктор класса Gun.
+        Конструктор класса Gun
 
         Args:
         x - Расположение пушки по оси x
@@ -140,6 +154,7 @@ class Gun:
         fire - способ стрельбы и прицеливания (мышью или с помощью пробела, Q и E)
         number - номер игрока/команды данной пушки
         """
+        super().__init__(screen)
         self.number = number
         self.right = direction_keys[0]
         self.left = direction_keys[1]
@@ -154,15 +169,15 @@ class Gun:
         self.smaller = size_keys[0]
         self.bigger = size_keys[1]
         self.fire_method = fire
-        self.invincibility = 150  # число кадров неуязвимости
-        self.r = 15
+        self.invincibility = 60  # число кадров неуязвимости
+        self.r = 15 * 1.5
         self.x = x
         self.y = y
         self.v = 10
         self.vx = 0
         self.vy = 0
         self.rotate = 0  # направление вращения башни
-        self.start_length = 3 * self.r  # длина дула
+        self.start_length = 2 * self.r  # длина дула
         self.screen = screen
         self.f2_power = 5  # минимальная, стартовая сила стрельбы
         self.f2_on = 0
@@ -184,7 +199,7 @@ class Gun:
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши или угла дула, выбранного Q и E.
         """
         new_ball = Ball(self.screen, self.x + (self.f2_power + self.start_length) * math.cos(self.an),
-                        self.y + (self.f2_power + self.start_length) * math.sin(self.an), self.r, self.power)
+                        self.y + (self.f2_power + self.start_length) * math.sin(self.an), 2 * self.r / 3, self.power)
         if self.fire_method == "MOUSE":
             self.an = math.atan2((event.pos[1] - self.y), (event.pos[0] - self.x))
         new_ball.vx = self.f2_power * math.cos(self.an) / 2 + self.vx / 2
@@ -210,28 +225,29 @@ class Gun:
 
     def movex(self):
         """ Перемещение пушки вдоль оси x вплоть до столкновения со стеной. """
-        if self.x + 1.5 * self.r + self.vx > WIDTH:
-            self.x = WIDTH - 1.5 * self.r
+        if self.x + self.r + self.vx > WIDTH:
+            self.x = WIDTH - self.r
             self.vx = 0
-        elif self.x - 1.5 * self.r + self.vx < 0:
-            self.x = 1.5 * self.r
+        elif self.x - self.r + self.vx < 0:
+            self.x = self.r
             self.vx = 0
         else:
             self.x += self.vx
 
     def movey(self):
         """ Перемещение пушки вдоль оси y вплоть до столкновения со стеной. """
-        if self.y + 1.5 * self.r + self.vy > HEIGHT:
-            self.y = HEIGHT - 1.5 * self.r
+        if self.y + self.r + self.vy > HEIGHT:
+            self.y = HEIGHT - self.r
             self.vy = 0
-        elif self.y - 1.5 * self.r + self.vy < 0:
-            self.y = 1.5 * self.r
+        elif self.y - self.r + self.vy < 0:
+            self.y = self.r
             self.vy = 0
         else:
             self.y += self.vy
 
     def draw(self):
         """ Рисует пушку. """
+        self.r = 2 * self.r / 3
         dr.polygon(self.screen, self.color,
                    [(self.x + self.r * math.cos(self.an + math.pi / 2),
                      self.y + self.r * math.sin(self.an + math.pi / 2)),
@@ -245,77 +261,39 @@ class Gun:
                         self.an),
                      self.y + self.r * math.sin(self.an + math.pi / 2) + (self.f2_power + self.start_length) * math.sin(
                          self.an))])
-        dr.circle(self.screen, TEAM_COLORS[self.number - 1], (self.x, self.y), 1.5 * self.r)
-        dr.circle(self.screen, self.power, (self.x, self.y), self.r)
+        self.r = 1.5 * self.r
+        dr.circle(self.screen, TEAM_COLORS[self.number - 1], (self.x, self.y), self.r)
+        dr.circle(self.screen, self.power, (self.x, self.y), 2 * self.r / 3)
 
     def power_up(self):
         """ Отвечает за зарядку силы выстрела и вращение дула при нажатии соответствующих кнопок. """
         self.an += self.rotate
         if self.f2_on:
-            if self.f2_power < (self.start_length - self.r) * 3:
+            if self.f2_power < 3 * self.start_length - 2 * self.r:
                 self.f2_power += 1
             self.color = RED
         else:
             self.color = GREY
 
-    def hit_test(self, obj):
-        """
-        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
-        Args:
-            obj: Обьект, с которым проверяется столкновение.
-        Returns:
-            Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
-        """
-        if 1.5 * self.r + obj.r >= ((self.x - obj.x) ** 2 + (self.y - obj.y) ** 2) ** (1 / 2):
-            return True
-        return False
-
-
-class Target:
+class Target(Collidable):
     def __init__(self, screen):
-        """ Конструктор класса Target. """
-        self.screen = screen
-        self.new_target()
-
-    def new_target(self):
         """
+        Конструктор класса Target
+
         Меняет уничтоженную цель на новую, случайного типа.
         Обычные цели 5и игровых цветов могут быть уничтожены соответствующими снарядами, двигаются
         по прямой до столкновения с препятствием.
         Красные цели двигаются по синусоидам и не могут быть уничтожены попаданием, но направление их движения
         меняется при попадании и они также снимают очки при столкновении с пушкой
         """
+        super().__init__(screen)
         self.live = 1
-        direction_x = rnd.random() - 0.5
-        direction_y = rnd.random() - 0.5
-        if direction_x != 0:
-            direction_x *= 1 / abs(direction_x)
-        if direction_y != 0:
-            direction_y *= 1 / abs(direction_y)
-        if rnd.random() >= 0.5:
-            self.type = 0
-            self.r = rnd.randint(20, 50)
-            self.x = rnd.randint(self.r + 150, WIDTH - self.r - 150)
-            self.y = rnd.randint(self.r + 75, HEIGHT - self.r - 75)
-            self.speed = 7
-            self.color = rnd.choice(GAME_COLORS)
-            self.vx = self.speed * rnd.random() * direction_x
-            self.vy = (self.speed ** 2 - self.vx ** 2) ** (1 / 2) * direction_y
-        else:
-            self.r = 50
-            self.x = rnd.randint(self.r + 150, WIDTH - self.r - 150)
-            self.y = rnd.randint(self.r + 75, HEIGHT - self.r - 75)
-            self.speed = 20
-            self.color = RED
-            self.vx = self.speed
-            self.vy = self.speed
-            if rnd.random() >= 0.5:
-                self.vx *= direction_x
-                self.type = 1
-            else:
-                self.vy *= direction_y
-                self.type = 2
+        self.type = 0
+        self.r = rnd.randint(20, 50)
+        self.x = rnd.randint(self.r + 150, WIDTH - self.r - 150)
+        self.y = rnd.randint(self.r + 75, HEIGHT - self.r - 75)
+        self.color = rnd.choice(GAME_COLORS)
 
     def hit(self, number):
         """
@@ -341,32 +319,155 @@ class Target:
 
     def move(self):
         """ Перемещение целей в соответствии с приписанными им законами движения и рамками движения. """
-        if self.type == 0:
-            self.x += self.vx
-            self.y += self.vy
-        elif self.type == 1:
-            self.y += 2 * self.speed * math.sin(self.x)
-            self.x += self.vx
-        elif self.type == 2:
-            self.x += 2 * self.speed * math.sin(self.y)
-            self.y += self.vy
-        mediator = 1 - (self.type + 1) // 2  # == 0 if type == 1 or 2, 1 if 0
-        if self.x + self.r > WIDTH - 150 * mediator:
-            self.x = WIDTH - self.r - 150 * mediator
+        self.x += self.vx
+        self.y += self.vy
+        if self.x + self.r > WIDTH - 150:
+            self.x = WIDTH - self.r - 150
             self.vx *= -1
-        elif self.x - self.r < 150 * mediator:
-            self.x = self.r + 150 * mediator
+        elif self.x - self.r < 150:
+            self.x = self.r + 150
             self.vx *= -1
-        if self.y + self.r > HEIGHT - 75 * mediator:
-            self.y = HEIGHT - self.r - 75 * mediator
+        if self.y + self.r > HEIGHT - 75:
+            self.y = HEIGHT - self.r - 75
             self.vy *= -1
-        elif self.y - self.r < 75 * mediator:
-            self.y = self.r + 75 * mediator
+        elif self.y - self.r < 75:
+            self.y = self.r + 75
             self.vy *= -1
 
     def draw(self):
-        """ Рисует кружок-цель. """
+        """ Рисует кружок-цель/волну. """
         dr.circle(self.screen, self.color, (self.x, self.y), self.r)
+
+
+class Wave(Target):
+    def __init__(self, screen):
+        """ Конструктор класса Wave """
+        super().__init__(screen)
+        self.r = 50
+        self.x = rnd.randint(self.r + 150, WIDTH - self.r - 150)
+        self.y = rnd.randint(self.r + 75, HEIGHT - self.r - 75)
+        self.v = 20
+        self.color = RED
+        self.vx = self.v * self.vx / abs(self.vx)
+        self.vy = self.v * self.vy / abs(self.vy)
+        self.type = rnd.choice([1, 2])
+
+    def move(self):
+        """ Перемещение целей в соответствии с приписанными им законами движения и рамками движения. """
+        if self.type == 1:
+            self.y += self.vy * math.sin(self.x / 4)
+            self.x += self.vx
+        elif self.type == 2:
+            self.x += self.vx * math.sin(self.y / 4)
+            self.y += self.vy
+        if self.x + self.r > WIDTH:
+            self.x = WIDTH - self.r
+            self.vx *= -1
+            self.vy *= -1
+        elif self.x - self.r < 0:
+            self.x = self.r
+            self.vx *= -1
+            self.vy *= -1
+        if self.y + self.r > HEIGHT:
+            self.y = HEIGHT - self.r
+            self.vx *= -1
+            self.vy *= -1
+        elif self.y - self.r < 0:
+            self.y = self.r
+            self.vx *= -1
+            self.vy *= -1
+
+
+class Bomb(Target):
+    def __init__(self, screen):
+        """ Конструктор класса Bomb """
+        super().__init__(screen)
+        self.color = BLACK
+        self.type = 3
+
+    def hit_test(self, obj):
+        """
+        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
+
+        Args:
+            obj: Обьект, с которым проверяется столкновение.
+        Returns:
+            Возвращает True в случае столкновения объектов. В противном случае возвращает False.
+        """
+        if obj.x > self.x + self.r and obj.y > self.y + self.r:
+            if ((self.x + self.r - obj.x) ** 2 + (self.y + self.r - obj.y) ** 2) ** (1 / 2) <= obj.r:
+                return True
+        elif obj.x < self.x - self.r and obj.y > self.y + self.r:
+            if ((self.x - self.r - obj.x) ** 2 + (self.y + self.r - obj.y) ** 2) ** (1 / 2) <= obj.r:
+                return True
+        elif obj.x > self.x + self.r and obj.y < self.y - self.r:
+            if ((self.x + self.r - obj.x) ** 2 + (self.y - self.r - obj.y) ** 2) ** (1 / 2) <= obj.r:
+                return True
+        elif obj.x < self.x - self.r and obj.y < self.y - self.r:
+            if ((self.x - self.r - obj.x) ** 2 + (self.y - self.r - obj.y) ** 2) ** (1 / 2) <= obj.r:
+                return True
+        elif self.x - self.r > obj.x and abs(obj.x - self.x) <= self.r + obj.r:
+            return True
+        elif self.x + self.r < obj.x and abs(obj.x - self.x) <= self.r + obj.r:
+            return True
+        elif self.y - self.r > obj.y and abs(obj.y - self.y) <= self.r + obj.r:
+            return True
+        elif self.y + self.r < obj.y and abs(obj.y - self.y) <= self.r + obj.r:
+            return True
+        return False
+
+    def blow_up(self):
+        tts = []
+        t_new = Wave(our_screen)
+        t_new.type = 1
+        t_new.x = self.x
+        t_new.y = self.y
+        t_new.vx = abs(t_new.vx)
+        t_new.vy = abs(t_new.vy)
+        tts.append(t_new)
+        t_new = Wave(our_screen)
+        t_new.type = 1
+        t_new.x = self.x
+        t_new.y = self.y
+        t_new.vx = -abs(t_new.vx)
+        t_new.vy = -abs(t_new.vy)
+        tts.append(t_new)
+        t_new = Wave(our_screen)
+        t_new.type = 2
+        t_new.x = self.x
+        t_new.y = self.y
+        t_new.vy = abs(t_new.vy)
+        t_new.vx = abs(t_new.vx)
+        tts.append(t_new)
+        t_new = Wave(our_screen)
+        t_new.type = 2
+        t_new.x = self.x
+        t_new.y = self.y
+        t_new.vy = -abs(t_new.vy)
+        t_new.vx = -abs(t_new.vx)
+        tts.append(t_new)
+        return tts
+
+    def open_up(self):
+        tts = []
+        for i in range(4):
+            t_new = Target(our_screen)
+            t_new.r = 50
+            t_new.color = GAME_COLORS[i + 1]
+            t_new.vx = 10 * (-1) ** i
+            t_new.vy = -10 * (-1) ** (i // 2)
+            t_new.x = t.x
+            t_new.y = t.y
+            tts.append(t_new)
+        return tts
+
+    def move(self):
+        """ Вместо перемещения бомба разростается. """
+        self.r += 1
+
+    def draw(self):
+        """ Рисует квадрат-бомбу. """
+        dr.rect(self.screen, self.color, (self.x - self.r, self.y - self.r, 2 * self.r, 2 * self.r))
 
 
 pygame.init()
@@ -446,13 +547,13 @@ while not finished:
                     gun.vx = 0
                     gun.vy = 0
                 if our_event.key == gun.smaller:
-                    if gun.r > 5:
-                        gun.r -= 5
-                        gun.start_length = 3 * gun.r
+                    if gun.r > 7.5:
+                        gun.r -= 7.5
+                        gun.start_length = 2 * gun.r
                 if our_event.key == gun.bigger:
-                    if gun.r < 25:
-                        gun.r += 5
-                        gun.start_length = 3 * gun.r
+                    if gun.r < 37.5:
+                        gun.r += 7.5
+                        gun.start_length = 2 * gun.r
                 if our_event.key == gun.black:
                     gun.power = BLACK
                 elif our_event.key == gun.blue:
@@ -469,13 +570,25 @@ while not finished:
         gun.power_up()
         gun.invincibility = max(0, gun.invincibility - 1)
         for t in targets:
-            if gun.hit_test(t) and t.live:
+            if t.live == 0:
+                if len(targets) <= number_of_targets:
+                    new_target = rnd.choice([Target(our_screen)] * 9 + [Wave(our_screen)] * 2 + [Bomb(our_screen)])
+                    targets[targets.index(t)] = new_target
+                else:
+                    targets.pop(targets.index(t))
+            if t.hit_test(gun) and t.live:
                 t.live = 0
+                if t.type == 3:
+                    our_points[gun.number - 1] -= 5
+                    for elem in t.blow_up():
+                        targets.append(elem)
+                    our_screen.fill(RED)
+                    gun.invincibility = 0
                 if gun.invincibility == 0:
                     our_points[gun.number - 1] -= 5
                     our_screen.fill(RED)
-                    gun.invincibility += 30
-                t.new_target()
+                    if t.type != 3:
+                        gun.invincibility = 30
                 pygame.display.update()
                 clock.tick(FPS)
         for b in balls:
@@ -493,35 +606,44 @@ while not finished:
                     clock.tick(FPS)
                     our_points[gun.number - 1] -= 20
                     our_points[b.number - 1] += 20
-                    gun.invincibility += 30
+                    gun.invincibility = 30
                 else:
                     our_screen.fill(RED)
                     pygame.display.update()
                     clock.tick(FPS)
                     our_points[gun.number - 1] -= 10
-                    gun.invincibility += 30
+                    gun.invincibility = 30
     for b in balls:
         for t in targets:
-            if b.hit_test(t) and t.live:
-                if t.color == b.color:
+            if t.hit_test(b) and t.live:
+                if t.color == b.color and t.type != 3:
                     balls = []
                     our_points[b.number - 1] += 10
                     t.live = 0
                     bullet = t.hit(b.number)
-                    t.new_target()
                 elif t.type == 1:
                     t.type = 2
-                    t.vy = t.speed
-                    t.vx = 2 * t.speed
+                    t.vy = t.v
+                    t.vx = 2 * t.v
                     b.live = 0
                 elif t.type == 2:
                     t.type = 1
-                    t.vx = t.speed
-                    t.vy = 2 * t.speed
+                    t.vx = t.v
+                    t.vy = 2 * t.v
                     b.live = 0
+                elif t.type == 3:
+                    t.live = 0
+                    b.live = 0
+                    if t.color == b.color:
+                        our_points[b.number - 1] += 20
+                        for elem in t.open_up():
+                            targets.append(elem)
+                    else:
+                        our_points[b.number - 1] -= 5
+                        for elem in t.blow_up():
+                            targets.append(elem)
                 else:
                     our_points[b.number - 1] -= 1
                     t.live = 0
-                    t.new_target()
 
 pygame.quit()

@@ -22,8 +22,9 @@ WASD = [100, 97, 115, 119]
 TAB = 9
 LEFT_SHIFT = 1073742049
 RIGHT_SHIFT = 1073742053
-QE = [113, 101]
-SQUARE_BRACKETS = [91, 93]
+ZX = [122, 120]
+Q, E = 113, 101
+SQUARE_BRACKETS = [1093, 1098]
 ONE_TO_FIVE = [49, 50, 51, 52, 53]
 SIX_TO_ZERO = [54, 55, 56, 57, 48]
 
@@ -34,6 +35,12 @@ HEIGHT = 750
 
 
 def score(screen, points):
+    """
+    Выводит на экран счётчик очков игроков/команд
+
+    :param screen: экран
+    :param points: список очков 2х команд
+    """
     font = pygame.font.Font(None, 100)
     score_counter1 = font.render(str(points[0]), True, TEAM_COLORS[0])
     score_counter2 = font.render(str(points[1]), True, TEAM_COLORS[1])
@@ -45,11 +52,14 @@ def score(screen, points):
 
 class Ball:
     def __init__(self, screen: pygame.Surface, x, y, r, power):
-        """ Конструктор класса ball
+        """
+        Конструктор класса Ball
 
         Args:
         x - начальное положение мяча по горизонтали
         y - начальное положение мяча по вертикали
+        r - радиус мяча
+        power - цвет мяча, отвечающий за то, какие цели тот может уничтожить
         """
         self.number = 0
         self.screen = screen
@@ -59,39 +69,51 @@ class Ball:
         self.vx = 0
         self.vy = 0
         self.color = power
-        self.live = 1
+        if self.color != BLACK:
+            self.live = 70  # продолжительность жизни шаров, меньше для прямолетящих
+        else:
+            self.live = 35
 
     def move(self):
-        """Переместить мяч по прошествии единицы времени.
+        """
+        Переместить мяч по прошествии единицы времени.
 
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
-        self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
-        и стен по краям окна (размер окна 800х600).
+        self.x и self.y с учетом скоростей self.vx и self.vy, сил гравитации для цветных мячей
+        и стен по краям окна (размер окна WIDTH х HEIGHT).
         """
         self.x += self.vx
         self.y -= self.vy
-        self.vx *= 0.99
-        self.vy *= 0.99
-        if self.y <= HEIGHT - self.r - 1:
-            self.vy -= 1
-        if self.y + self.r >= HEIGHT:
+        if self.y - self.r < 0:
+            self.y = self.r
+            self.vy *= -1
+        elif self.y + self.r > HEIGHT:
             self.y = HEIGHT - self.r
-            self.vx *= 0.8
-            self.vy *= -0.8
+            self.vy *= -1
+        else:
+            if self.color == BLUE:
+                self.vy -= 1
+            elif self.color == YELLOW:
+                self.vy += 1
         if self.x + self.r > WIDTH:
             self.x = WIDTH - self.r
             self.vx *= -1
         elif self.x - self.r < 0:
             self.x = self.r
             self.vx *= -1
-        if self.vx <= 2 and self.vy <= 2 and self.y == HEIGHT - self.r:
-            self.live = 0
+        else:
+            if self.color == MAGENTA:
+                self.vx += 1
+            elif self.color == CYAN:
+                self.vx -= 1
 
     def draw(self):
+        """ Рисует мяч. """
         pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
 
     def hit_test(self, obj):
-        """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
+        """
+        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
         Args:
             obj: Обьект, с которым проверяется столкновение.
@@ -104,7 +126,20 @@ class Ball:
 
 
 class Gun:
-    def __init__(self, screen, x, y, direction_keys, full_stop, change_keys, size_keys, number):
+    def __init__(self, screen, x, y, direction_keys, full_stop, change_keys, size_keys, fire, number):
+        """
+        Конструктор класса Gun.
+
+        Args:
+        x - Расположение пушки по оси x
+        y - Расположение пушки по оси y
+        direction_keys - Список кнопок, отвечающих за смену направления движения (в порядке вправо, влево, вниз, вверх)
+        full_stop - Кнопка для полной остановки пушки на месте
+        change_keys - 5 кнопок для переключения между режимами стрельбы
+        size_keys - 2е кнопки для изменения размера пушки (меньше, больше)
+        fire - способ стрельбы и прицеливания (мышью или с помощью пробела, Q и E)
+        number - номер игрока/команды данной пушки
+        """
         self.number = number
         self.right = direction_keys[0]
         self.left = direction_keys[1]
@@ -118,49 +153,63 @@ class Gun:
         self.cyan = change_keys[4]
         self.smaller = size_keys[0]
         self.bigger = size_keys[1]
+        self.fire_method = fire
+        self.invincibility = 150  # число кадров неуязвимости
         self.r = 15
         self.x = x
         self.y = y
         self.v = 10
         self.vx = 0
         self.vy = 0
-        self.start_length = 3 * self.r
+        self.rotate = 0  # направление вращения башни
+        self.start_length = 3 * self.r  # длина дула
         self.screen = screen
-        self.f2_power = 5
+        self.f2_power = 5  # минимальная, стартовая сила стрельбы
         self.f2_on = 0
-        self.an = 1
-        self.power = BLACK
+        self.an = 0  # угол направления дула
+        self.power = BLACK  # цвет снарядов
         self.color = GREY
 
-    def fire2_start(self, event):
+    def fire2_start(self):
+        """
+        Начало подготовки выстрела мячом (после чего начинает увеличиваться сила вплоть до самого выстрела)
+        """
         self.f2_on = 1
 
     def fire2_end(self, event):
-        """Выстрел мячом.
+        """
+        Выстрел мячом.
 
-        Происходит при отпускании кнопки мыши.
-        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
+        Происходит при отпускании кнопки мыши или пробела.
+        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши или угла дула, выбранного Q и E.
         """
         new_ball = Ball(self.screen, self.x + (self.f2_power + self.start_length) * math.cos(self.an),
                         self.y + (self.f2_power + self.start_length) * math.sin(self.an), self.r, self.power)
-        self.an = math.atan2((event.pos[1] - self.y), (event.pos[0] - self.x))
-        new_ball.vx = self.f2_power * math.cos(self.an) / 2 + self.vx
-        new_ball.vy = - self.f2_power * math.sin(self.an) / 2 + self.vy
+        if self.fire_method == "MOUSE":
+            self.an = math.atan2((event.pos[1] - self.y), (event.pos[0] - self.x))
+        new_ball.vx = self.f2_power * math.cos(self.an) / 2 + self.vx / 2
+        new_ball.vy = - self.f2_power * math.sin(self.an) / 2 - self.vy / 2
         new_ball.number = self.number
         self.f2_on = 0
         self.f2_power = 5
         return new_ball
 
     def targeting(self, event):
-        """Прицеливание. Зависит от положения мыши."""
-        if event:
-            self.an = math.atan2((event.pos[1] - self.y), (event.pos[0] - self.x))
+        """ Прицеливание. Положение дула зависит от положения мыши или начинает вращаться при нажатии Q или E. """
         if self.f2_on:
             self.color = RED
         else:
             self.color = GREY
+        if self.fire_method == "MOUSE":
+            self.an = math.atan2((event.pos[1] - self.y), (event.pos[0] - self.x))
+        elif self.fire_method == "SPACE" and event.type == pygame.KEYDOWN:
+            if event.key == Q or event.key == E:
+                self.rotate += (107 - event.key) / 48  # положительный для E, отрицательный для Q
+        elif self.fire_method == "SPACE" and event.type == pygame.KEYUP:
+            self.rotate -= (107 - event.key) / 48
 
     def movex(self):
+        """ Перемещение пушки вдоль оси x вплоть до столкновения со стеной. """
         if self.x + 1.5 * self.r + self.vx > WIDTH:
             self.x = WIDTH - 1.5 * self.r
             self.vx = 0
@@ -171,6 +220,7 @@ class Gun:
             self.x += self.vx
 
     def movey(self):
+        """ Перемещение пушки вдоль оси y вплоть до столкновения со стеной. """
         if self.y + 1.5 * self.r + self.vy > HEIGHT:
             self.y = HEIGHT - 1.5 * self.r
             self.vy = 0
@@ -181,6 +231,7 @@ class Gun:
             self.y += self.vy
 
     def draw(self):
+        """ Рисует пушку. """
         dr.polygon(self.screen, self.color,
                    [(self.x + self.r * math.cos(self.an + math.pi / 2),
                      self.y + self.r * math.sin(self.an + math.pi / 2)),
@@ -198,6 +249,8 @@ class Gun:
         dr.circle(self.screen, self.power, (self.x, self.y), self.r)
 
     def power_up(self):
+        """ Отвечает за зарядку силы выстрела и вращение дула при нажатии соответствующих кнопок. """
+        self.an += self.rotate
         if self.f2_on:
             if self.f2_power < (self.start_length - self.r) * 3:
                 self.f2_power += 1
@@ -206,7 +259,8 @@ class Gun:
             self.color = GREY
 
     def hit_test(self, obj):
-        """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
+        """
+        Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
 
         Args:
             obj: Обьект, с которым проверяется столкновение.
@@ -220,13 +274,18 @@ class Gun:
 
 class Target:
     def __init__(self, screen):
-        """ Вызывает инициализацию при создании нового объекта класса Target. """
+        """ Конструктор класса Target. """
         self.screen = screen
-        self.points = 0
         self.new_target()
 
     def new_target(self):
-        """ Меняет уничтоженную цель на новую, случайную. """
+        """
+        Меняет уничтоженную цель на новую, случайного типа.
+        Обычные цели 5и игровых цветов могут быть уничтожены соответствующими снарядами, двигаются
+        по прямой до столкновения с препятствием.
+        Красные цели двигаются по синусоидам и не могут быть уничтожены попаданием, но направление их движения
+        меняется при попадании и они также снимают очки при столкновении с пушкой
+        """
         self.live = 1
         direction_x = rnd.random() - 0.5
         direction_y = rnd.random() - 0.5
@@ -245,8 +304,8 @@ class Target:
             self.vy = (self.speed ** 2 - self.vx ** 2) ** (1 / 2) * direction_y
         else:
             self.r = 50
-            self.x = rnd.randint(self.r, WIDTH - self.r)
-            self.y = rnd.randint(self.r, HEIGHT - self.r)
+            self.x = rnd.randint(self.r + 150, WIDTH - self.r - 150)
+            self.y = rnd.randint(self.r + 75, HEIGHT - self.r - 75)
             self.speed = 20
             self.color = RED
             self.vx = self.speed
@@ -259,7 +318,10 @@ class Target:
                 self.type = 2
 
     def hit(self, number):
-        """Попадание шарика в цель."""
+        """
+        Попадание шарика в цель. Появление сообщения о попадании и изменение очков.
+        Возвращает обнулённый счётчик выстрелов для обоих игроков/команд.
+        """
         self.screen.fill(WHITE)
         guns[number - 1].color = GREEN
         guns[number - 1].draw()
@@ -270,7 +332,7 @@ class Target:
         self.screen.blit(message, place)
         pygame.display.update()
         clock.tick(1)
-        for event in pygame.event.get():
+        for _ in pygame.event.get():
             pass
         for gunn in guns:
             gunn.f2_on = 0
@@ -278,12 +340,16 @@ class Target:
         return [0, 0]
 
     def move(self):
-        if self.type == 1:
-            self.vy = 2 * self.speed * math.sin(self.x)
+        """ Перемещение целей в соответствии с приписанными им законами движения и рамками движения. """
+        if self.type == 0:
+            self.x += self.vx
+            self.y += self.vy
+        elif self.type == 1:
+            self.y += 2 * self.speed * math.sin(self.x)
+            self.x += self.vx
         elif self.type == 2:
-            self.vx = 2 * self.speed * math.sin(self.y)
-        self.x += self.vx
-        self.y += self.vy
+            self.x += 2 * self.speed * math.sin(self.y)
+            self.y += self.vy
         mediator = 1 - (self.type + 1) // 2  # == 0 if type == 1 or 2, 1 if 0
         if self.x + self.r > WIDTH - 150 * mediator:
             self.x = WIDTH - self.r - 150 * mediator
@@ -299,6 +365,7 @@ class Target:
             self.vy *= -1
 
     def draw(self):
+        """ Рисует кружок-цель. """
         dr.circle(self.screen, self.color, (self.x, self.y), self.r)
 
 
@@ -306,13 +373,13 @@ pygame.init()
 our_screen = pygame.display.set_mode((WIDTH, HEIGHT))
 bullet = [0, 0]
 our_points = [0, 0]
-number_of_targets = 4
+number_of_targets = 6
 balls = []
 targets = []
 
 clock = pygame.time.Clock()
-gun1 = Gun(our_screen, 30, 720, WASD, LEFT_SHIFT, ONE_TO_FIVE, QE, 1)
-gun2 = Gun(our_screen, 1470, 30, ARROWS, RIGHT_SHIFT, SIX_TO_ZERO, SQUARE_BRACKETS, 2)
+gun1 = Gun(our_screen, 30, 720, WASD, LEFT_SHIFT, ONE_TO_FIVE, ZX, "SPACE", 1)
+gun2 = Gun(our_screen, 1470, 30, ARROWS, RIGHT_SHIFT, SIX_TO_ZERO, SQUARE_BRACKETS, "MOUSE", 2)
 guns = [gun1, gun2]
 for _ in range(number_of_targets):
     targets.append(Target(our_screen))
@@ -336,27 +403,45 @@ while not finished:
         for gun in guns:
             if our_event.type == pygame.QUIT:
                 finished = True
-            elif our_event.type == pygame.MOUSEBUTTONDOWN:
-                gun.fire2_start(our_event)
-            elif our_event.type == pygame.MOUSEBUTTONUP:
+            elif our_event.type == pygame.MOUSEBUTTONDOWN and gun.fire_method == "MOUSE":
+                gun.fire2_start()
+            elif our_event.type == pygame.MOUSEBUTTONUP and gun.fire_method == "MOUSE":
                 bullet[gun.number - 1] += 1
                 balls.append(gun.fire2_end(our_event))
-            elif our_event.type == pygame.MOUSEMOTION:
+            elif our_event.type == pygame.MOUSEMOTION and gun.fire_method == "MOUSE":
                 gun.targeting(our_event)
+            elif our_event.type == pygame.KEYDOWN and gun.fire_method == "SPACE":
+                if our_event.key == 32:
+                    gun.fire2_start()
+                elif our_event.key == Q or our_event.key == E:
+                    gun.targeting(our_event)
+            elif our_event.type == pygame.KEYUP and gun.fire_method == "SPACE":
+                if our_event.key == 32:
+                    bullet[gun.number - 1] += 1
+                    balls.append(gun.fire2_end(our_event))
+                elif our_event.key == Q or our_event.key == E:
+                    gun.targeting(our_event)
             if our_event.type == pygame.KEYDOWN:
-                print(our_event.key)
                 if our_event.key == gun.right:
-                    gun.vx = gun.v
-                    gun.vy = 0
+                    if gun.vx != gun.v:
+                        gun.vx = gun.v
+                    else:
+                        gun.vy = 0
                 if our_event.key == gun.left:
-                    gun.vx = -gun.v
-                    gun.vy = 0
+                    if gun.vx != -gun.v:
+                        gun.vx = -gun.v
+                    else:
+                        gun.vy = 0
                 if our_event.key == gun.down:
-                    gun.vy = gun.v
-                    gun.vx = 0
+                    if gun.vy != gun.v:
+                        gun.vy = gun.v
+                    else:
+                        gun.vx = 0
                 if our_event.key == gun.up:
-                    gun.vy = -gun.v
-                    gun.vx = 0
+                    if gun.vy != -gun.v:
+                        gun.vy = -gun.v
+                    else:
+                        gun.vx = 0
                 if our_event.key == gun.stop:
                     gun.vx = 0
                     gun.vy = 0
@@ -382,22 +467,39 @@ while not finished:
         gun.movex()
         gun.movey()
         gun.power_up()
+        gun.invincibility = max(0, gun.invincibility - 1)
         for t in targets:
             if gun.hit_test(t) and t.live:
-                our_points[gun.number - 1] -= 5
                 t.live = 0
-                our_screen.fill(RED)
+                if gun.invincibility == 0:
+                    our_points[gun.number - 1] -= 5
+                    our_screen.fill(RED)
+                    gun.invincibility += 30
                 t.new_target()
                 pygame.display.update()
                 clock.tick(FPS)
         for b in balls:
             b.move()
-            if b.live == 0:
+            b.live -= 1
+            if b.live <= 0:
                 balls.pop(balls.index(b))
-            if gun.hit_test(b) and gun.number != b.number:
+            if gun.hit_test(b):
                 b.live = 0
-                our_points[gun.number - 1] -= 100
-                our_points[2 - gun.number] += 10
+                if gun.invincibility > 0:
+                    pass
+                elif gun.number != b.number:
+                    our_screen.fill(RED)
+                    pygame.display.update()
+                    clock.tick(FPS)
+                    our_points[gun.number - 1] -= 20
+                    our_points[b.number - 1] += 20
+                    gun.invincibility += 30
+                else:
+                    our_screen.fill(RED)
+                    pygame.display.update()
+                    clock.tick(FPS)
+                    our_points[gun.number - 1] -= 10
+                    gun.invincibility += 30
     for b in balls:
         for t in targets:
             if b.hit_test(t) and t.live:

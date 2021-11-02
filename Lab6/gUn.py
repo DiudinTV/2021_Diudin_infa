@@ -223,7 +223,7 @@ class Gun(Collidable):
         elif self.fire_method == "SPACE" and event.type == pygame.KEYUP:
             self.rotate -= (107 - event.key) / 48
 
-    def movex(self):
+    def move_x(self):
         """ Перемещение пушки вдоль оси x вплоть до столкновения со стеной. """
         if self.x + self.r + self.vx > WIDTH:
             self.x = WIDTH - self.r
@@ -234,7 +234,7 @@ class Gun(Collidable):
         else:
             self.x += self.vx
 
-    def movey(self):
+    def move_y(self):
         """ Перемещение пушки вдоль оси y вплоть до столкновения со стеной. """
         if self.y + self.r + self.vy > HEIGHT:
             self.y = HEIGHT - self.r
@@ -382,7 +382,6 @@ class Bomb(Target):
     def __init__(self, screen):
         """ Конструктор класса Bomb """
         super().__init__(screen)
-        self.color = BLACK
         self.type = 3
 
     def hit_test(self, obj):
@@ -417,6 +416,11 @@ class Bomb(Target):
         return False
 
     def blow_up(self):
+        """
+        Если бомба касается танка или в неё попадает не тот цвет снаряда, она уничтожается и из неёвылетает 4 волны
+
+        :return: список из 4х новых целей-волн
+        """
         tts = []
         t_new = Wave(our_screen)
         t_new.type = 1
@@ -449,16 +453,26 @@ class Bomb(Target):
         return tts
 
     def open_up(self):
+        """
+        Вскрывает бомбу, в которую попали*, и выбрасывает 4 новых цели отличных от бомбы цветов
+        *Попадание снаряда засчитывается с большей вероятностью при меньшей скорости снаряда
+        (регестрирует выстрелы только граница квадрата-бомбы)
+
+        :return: список из 4х новых целей
+        """
         tts = []
-        for i in range(4):
-            t_new = Target(our_screen)
-            t_new.r = 50
-            t_new.color = GAME_COLORS[i + 1]
-            t_new.vx = 10 * (-1) ** i
-            t_new.vy = -10 * (-1) ** (i // 2)
-            t_new.x = t.x
-            t_new.y = t.y
-            tts.append(t_new)
+        k = 0
+        for i in range(5):
+            if GAME_COLORS[i] != self.color:
+                k += 1
+                t_new = Target(our_screen)
+                t_new.r = 50
+                t_new.color = GAME_COLORS[i]
+                t_new.vx = 10 * (-1) ** k
+                t_new.vy = -10 * (-1) ** (k // 2)
+                t_new.x = t.x
+                t_new.y = t.y
+                tts.append(t_new)
         return tts
 
     def move(self):
@@ -489,6 +503,10 @@ finished = False
 while not finished:
     our_screen.fill(GREEN)
     dr.rect(our_screen, WHITE, (150, 75, WIDTH - 300, HEIGHT - 150))
+    dr.rect(our_screen, BLUE, (10, HEIGHT - 10, WIDTH - 20, 10))
+    dr.rect(our_screen, YELLOW, (10, 0, WIDTH - 20, 10))
+    dr.rect(our_screen, MAGENTA, (WIDTH - 10, 10, 10, HEIGHT - 20))
+    dr.rect(our_screen, CYAN, (0, 10, 10, HEIGHT - 20))
     gun1.draw()
     gun2.draw()
     for t in targets:
@@ -565,8 +583,8 @@ while not finished:
                 elif our_event.key == gun.cyan:
                     gun.power = CYAN
     for gun in guns:
-        gun.movex()
-        gun.movey()
+        gun.move_x()
+        gun.move_y()
         gun.power_up()
         gun.invincibility = max(0, gun.invincibility - 1)
         for t in targets:
